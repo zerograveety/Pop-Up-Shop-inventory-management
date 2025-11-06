@@ -140,47 +140,69 @@ export default function ProductsManage() {
 
   return (
     <div className="container" style={{ padding: 'var(--space-6)' }}>
-      <div style={{background:'#ffe08a',color:'#5a4500',padding:'8px 12px',borderRadius:4,marginBottom:12,fontSize:14}}>
-        ProductsManage component mounted {loading && '(loading...)'} | products: {products.length}
-      </div>
       <h1 className="heading-xl">Product Management</h1>
-      <p className="subtle">{isAdminView ? 'Create or edit products and manage central stock.' : 'View catalog and manage your shop stock quantities.'}</p>
+      <p className="subtle" style={{marginTop:'-4px'}}>
+        {isAdminView ? 'Create or edit products and manage central (warehouse) stock.' : 'View catalog and manage your shop stock quantities.'}
+      </p>
 
       {error && <div className="alert error" style={{ marginTop: '1rem' }}>{error}</div>}
 
       {isAdminView && (
-        <div className="panel" style={{ marginTop: '1.5rem' }}>
-          <h2 style={{ marginBottom: '1rem' }}>{editingId ? 'Edit Product' : 'Create Product'}</h2>
-          <form onSubmit={handleSubmit} className="grid" style={{ gap: '1rem', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))' }}>
-            <input name="product_name" placeholder="Name" value={form.product_name} onChange={handleChange} required />
-            <input name="price" placeholder="Price" type="number" step="0.01" value={form.price} onChange={handleChange} required />
-            <input name="category" placeholder="Category" value={form.category} onChange={handleChange} />
-            {!editingId && (
-              <input
-                name="warehouse_quantity"
-                placeholder="Initial Warehouse Stock"
-                type="number"
-                min={0}
-                value={form.warehouse_quantity}
-                onChange={handleChange}
-              />
-            )}
-            <div style={{ display: 'flex', gap: '.5rem' }}>
-              <button className="btn primary" type="submit" disabled={saving}>{saving ? 'Saving...' : (editingId ? 'Update' : 'Create')}</button>
-              {editingId && <button type="button" className="btn" onClick={resetForm}>Cancel</button>}
+        <div className="panel" style={{ marginTop: '1.5rem', padding:'var(--space-6)' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'var(--space-4)' }}>
+            <h2 className="heading-md">{editingId ? 'Edit Product' : 'Create Product'}</h2>
+            {!editingId && <span className="subtle">You can set initial warehouse stock on create</span>}
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="grid" style={{ gap: 'var(--space-4)', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
+              <div className="stack">
+                <label className="subtle" htmlFor="product_name">Name</label>
+                <input id="product_name" name="product_name" placeholder="e.g. Cooking Oil" value={form.product_name} onChange={handleChange} required />
+              </div>
+              <div className="stack">
+                <label className="subtle" htmlFor="price">Price</label>
+                <input id="price" name="price" placeholder="0.00" type="number" step="0.01" value={form.price} onChange={handleChange} required />
+              </div>
+              <div className="stack">
+                <label className="subtle" htmlFor="category">Category</label>
+                <input id="category" name="category" placeholder="e.g. Grocery" value={form.category} onChange={handleChange} />
+              </div>
+              {!editingId && (
+                <div className="stack">
+                  <label className="subtle" htmlFor="warehouse_quantity">Initial Warehouse Stock</label>
+                  <input
+                    id="warehouse_quantity"
+                    name="warehouse_quantity"
+                    placeholder="0"
+                    type="number"
+                    min={0}
+                    value={form.warehouse_quantity}
+                    onChange={handleChange}
+                  />
+                </div>
+              )}
+              <div>
+                <div style={{ display: 'flex', gap: '.5rem', alignItems:'center' }}>
+                  <button className="btn primary" type="submit" disabled={saving}>{saving ? 'Saving...' : (editingId ? 'Update' : 'Create')}</button>
+                  {editingId && <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancel</button>}
+                </div>
+              </div>
             </div>
           </form>
-          <p className="subtle" style={{marginTop:8}}>
-            Tip: When creating a product, you can optionally set its initial Warehouse stock. After creation, you can continue managing central stock in Admin &gt; Warehouse Stock, and managers can adjust their shop stock below.
+          <p className="subtle" style={{marginTop:'var(--space-3)'}}>
+            Tip: After creation, manage central stock in Admin → Warehouse Stock. Managers adjust their shop stock below.
           </p>
         </div>
       )}
 
-      <div className="panel" style={{ marginTop: '2rem' }}>
-        <h2 style={{ marginBottom: '1rem' }}>Products</h2>
+      <div className="panel" style={{ marginTop: '2rem', padding:'var(--space-6)' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'var(--space-3)' }}>
+          <h2 className="heading-md">Products</h2>
+          <span className="subtle">Total: {products.length}</span>
+        </div>
         {loading ? <p>Loading...</p> : (
-          <div className="table-wrapper">
-            <table className="data-table">
+          <div className="table-wrapper" style={{ overflowX:'auto' }}>
+            <table className="data-table" style={{ minWidth: 820 }}>
               <thead>
                 <tr>
                   <th>Name</th>
@@ -203,7 +225,9 @@ export default function ProductsManage() {
                 {products.map(p => (
                   <tr key={p.product_id}>
                     <td>{p.product_name}</td>
-                    <td>{p.category || '-'}</td>
+                    <td>
+                      {p.category ? <span className="chip">{p.category}</span> : <span className="subtle">-</span>}
+                    </td>
                     <td>{Number(p.price).toFixed(2)}</td>
                     <td>
                       {isManagerView ? (
@@ -229,7 +253,7 @@ export default function ProductsManage() {
                           }}>Save</button>
                         </div>
                       ) : (
-                        <span>{p.stock_quantity ?? 0}</span>
+                        <span className="chip">{p.stock_quantity ?? 0}</span>
                       )}
                     </td>
                     {isAdminView && (
