@@ -67,12 +67,16 @@ export default function UsersManage() {
   return (
     <div className="container" style={{ padding: 'var(--space-6)' }}>
       <h1 className="heading-xl">User Management</h1>
-      {error && <div className="alert error">{error}</div>}
+      <p className="subtle">Create admins or managers and view their current event assignments.</p>
+      {error && <div className="alert error" style={{ marginTop: 'var(--space-3)' }}>{error}</div>}
 
       <div style={{ marginTop: '1rem' }}>
         {/* Quick Create User */}
         <div className="panel" style={{ marginBottom: '1rem', padding: 'var(--space-6)' }}>
-          <h3 className="heading-md">Create new user</h3>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'var(--space-4)' }}>
+            <h3 className="heading-md">Create new user</h3>
+            <span className="subtle">Fields marked required</span>
+          </div>
           <form onSubmit={async (e) => {
             e.preventDefault();
             setSaving(true);
@@ -94,15 +98,31 @@ export default function UsersManage() {
               setSaving(false);
             }
           }}>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <input placeholder="Name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required />
-              <input type="email" placeholder="Email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
-              <input type="password" placeholder="Password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
-              <select value={form.role_id} onChange={e => setForm({...form, role_id: e.target.value})}>
-                <option value={1}>Admin</option>
-                <option value={2}>Manager</option>
-              </select>
-              <button className="btn primary" type="submit" disabled={saving}>{saving ? 'Creating...' : 'Create User'}</button>
+            <div className="grid" style={{ gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:'var(--space-4)', alignItems:'end' }}>
+              <div className="stack">
+                <label className="subtle" htmlFor="name">Name</label>
+                <input id="name" placeholder="Jane Doe" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required />
+              </div>
+              <div className="stack">
+                <label className="subtle" htmlFor="email">Email</label>
+                <input id="email" type="email" placeholder="jane@shop.com" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
+              </div>
+              <div className="stack">
+                <label className="subtle" htmlFor="password">Password (optional)</label>
+                <input id="password" type="password" placeholder="Set initial password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
+              </div>
+              <div className="stack">
+                <label className="subtle" htmlFor="role">Role</label>
+                <select id="role" value={form.role_id} onChange={e => setForm({...form, role_id: e.target.value})}>
+                  <option value={1}>Admin</option>
+                  <option value={2}>Manager</option>
+                </select>
+              </div>
+              <div>
+                <button className="btn primary" type="submit" disabled={saving} style={{ width:'100%', minWidth:160 }}>
+                  {saving ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -111,7 +131,8 @@ export default function UsersManage() {
           <p>Loading users...</p>
         ) : (
           <div className="panel" style={{ padding: 'var(--space-6)' }}>
-            <table className="data-table">
+            <div style={{ overflowX:'auto', width:'100%' }}>
+            <table className="data-table" style={{ minWidth: 720 }}>
               <thead>
                 <tr>
                   <th>ID</th>
@@ -136,7 +157,11 @@ export default function UsersManage() {
                       <td>{id}</td>
                       <td>{u.name}</td>
                       <td>{u.email}</td>
-                      <td>{u.role_name || (u.role || '—')}</td>
+                      <td>
+                        <span className="chip" style={{ background:'var(--bg-secondary)' }}>
+                          {u.role_name || (u.role || '—')}
+                        </span>
+                      </td>
                       <td>
                         {loadingAssignments ? (
                           <span className="subtle">Loading…</span>
@@ -158,6 +183,7 @@ export default function UsersManage() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
