@@ -1,0 +1,13 @@
+{
+  "watch": [
+    "server.js",
+    "routes/",
+    "db.js"
+  ],
+  "ext": "js json",
+  "ignore": [
+    "frontend/**",
+    "node_modules/**"
+  ],
+  "exec": "node server_auth.js"
+}
