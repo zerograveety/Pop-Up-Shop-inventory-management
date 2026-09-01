@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { managerAPI } from "../api";
+import { managerAPI, productAPI } from "../api";
 import ProductDetailModal from "./ProductDetailModal";
 import QuantitySelector from "./QuantitySelector";
 import LoadingSkeleton from "./LoadingSkeleton";
@@ -25,11 +25,8 @@ export default function Products({ addToCart, onRequestAdd, mode = 'POS', search
           list.forEach(p => { initialQty[p.product_id] = 1; });
           setQuantities(initialQty);
         } else {
-          const res = await fetch("http://localhost:8080/api/products");
-          if (!res.ok) {
-            throw new Error(`Products fetch failed: ${res.status}`);
-          }
-          const data = await res.json();
+          const res = await productAPI.getAll();
+          const data = res.data;
           if (!active) return;
           const list = Array.isArray(data) ? data : (Array.isArray(data?.products) ? data.products : []);
           setProducts(list);

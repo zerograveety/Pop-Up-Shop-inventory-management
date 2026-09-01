@@ -13,7 +13,7 @@ export default function Checkout({ cart, clearCart, updateCartItem, removeCartIt
     setLoading(true);
     try {
       for (let item of cart) {
-        await API.post("/orders", {
+        await API.post("/api/orders", {
           customer_id: 1,
           product_id: item.product_id,
           quantity: item.quantity,

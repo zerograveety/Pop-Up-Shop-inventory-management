@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
-import { authAPI, managerAPI } from '../api';
 
 // Ensure a consistent API base URL for any direct axios usage in this context
 if (!axios.defaults.baseURL) {
@@ -24,35 +23,29 @@ export const AuthProvider = ({ children }) => {
   // Check if user is authenticated on app load
   useEffect(() => {
     const initializeAuth = async () => {
-      // Dev bypass detection: attempt a lightweight verify; if 401 then treat normally; if 200 success or AUTH_DISABLED header returned without stored token, create fake user
-      try {
-        const savedUser = localStorage.getItem('auth_user');
-        if (savedUser) {
-          try {
-            const parsed = JSON.parse(savedUser);
+      const savedUser = localStorage.getItem('auth_user');
+      const savedToken = localStorage.getItem('auth_token');
+      if (savedUser) {
+        try {
+          const parsed = JSON.parse(savedUser);
+          if (savedToken) {
             setUser(parsed);
             setIsAuthenticated(true);
-            setLoading(false);
-            return;
-          } catch (e) {
-            localStorage.removeItem('auth_user');
           }
+        } catch (e) {
+          localStorage.removeItem('auth_user');
+          localStorage.removeItem('auth_token');
         }
-
-        // Default unauthenticated
-        setIsAuthenticated(false);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
     initializeAuth();
   }, []);
 
-  const login = async (arg1, arg2) => {
+  const login = async (token, userData) => {
     try {
-      // Support both (token, user) and (user) signatures — token is ignored now
-      const userData = arg2 || arg1;
       if (!userData) return { success: false, error: 'No user data provided' };
+      if (token) localStorage.setItem('auth_token', token);
       localStorage.setItem('auth_user', JSON.stringify(userData));
       setUser(userData);
       setIsAuthenticated(true);
@@ -65,16 +58,14 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Clear localStorage
+      localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
-      
-      // Clear state
+
       setUser(null);
       setIsAuthenticated(false);
-      
-      // Remove axios default header
+
       delete axios.defaults.headers.common['Authorization'];
-      
+
       return { success: true };
     } catch (error) {
       console.error('Logout error:', error);

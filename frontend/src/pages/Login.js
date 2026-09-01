@@ -3,7 +3,6 @@ import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../api';
 import { AuthContext } from '../contexts/AuthContext';
-import Toast from '../components/Toast';
 import './Login.css';
 
 const Login = () => {
@@ -39,7 +38,6 @@ const Login = () => {
       if (response.data.success) {
         await login(response.data.token, response.data.user);
         navigate('/dashboard');
-        Toast.success(`Welcome back, ${response.data.user.name}!`);
       } else {
         setError(response.data.message || 'Login failed');
       }
@@ -159,8 +157,8 @@ const Login = () => {
         <div className="login-footer">
           <p>Demo Accounts:</p>
           <div className="demo-accounts">
-            <small>Admin: admin@inventory.com | password123</small>
-            <small>Manager: manager@inventory.com | password123</small>
+            <small>Admin: admin@popup.com | admin123</small>
+            <small>Manager: manager@inventory.com | admin123</small>
             {/* Cashier role removed */}
           </div>
         </div>

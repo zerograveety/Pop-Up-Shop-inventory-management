@@ -8,39 +8,33 @@ const API = axios.create({
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
-    // Help local dev auth middleware identify role without JWT
-    ...(process.env.NODE_ENV !== 'production' ? { 'X-Dev-Role': 'Admin' } : {})
   },
 });
 
-// Add request interceptor: attach dev role and current user (via X-User) when available
-// NOTE: JWT removed - do not attach Authorization header automatically
+// Add request interceptor: attach JWT token from localStorage if present
 API.interceptors.request.use((config) => {
   try {
-    const raw = localStorage.getItem('auth_user');
-    if (raw) {
-      const u = JSON.parse(raw);
-      // Provide minimal fields for backend dev auth
-      const xUser = {
-        id: u.user_id || u.id,
-        name: u.name,
-        email: u.email,
-        role: u.role || (u.role_id === 1 ? 'Admin' : 'Manager'),
-        roleId: u.role_id || (u.role === 'Admin' ? 1 : 2)
-      };
+    const token = localStorage.getItem('auth_token');
+    if (token) {
       config.headers = config.headers || {};
-      config.headers['X-User'] = JSON.stringify(xUser);
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
   } catch (_) { /* ignore */ }
   return config;
 }, (error) => Promise.reject(error));
 
-// Simplified response interceptor: log errors but do not auto-logout (JWT removed)
+// Response interceptor: on 401, clear expired token (client-side)
 API.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
     const url = error.config?.url || '';
+    if (status === 401) {
+      if (!url.includes('/auth/login') && !url.includes('/auth/register')) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+      }
+    }
     if (status === 403) console.error('Access forbidden:', url);
     if (status === 404) console.error('Resource not found:', url);
     if (status >= 500) console.error('Server error:', url);

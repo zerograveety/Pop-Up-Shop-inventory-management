@@ -22,7 +22,7 @@ router.get('/dashboard', authMiddleware, adminOnly, async (req, res) => {
     const orderCount = await pool.query('SELECT COUNT(*) FROM orders');
     const totalSales = await pool.query('SELECT COALESCE(SUM(total_amount), 0) as total FROM orders');
     const recentUsers = await pool.query(`
-      SELECT user_id, name, email, role_id, created_at
+      SELECT id, name, email, role_id, created_at
       FROM users
       ORDER BY created_at DESC
       LIMIT 5
@@ -49,7 +49,7 @@ router.get('/dashboard', authMiddleware, adminOnly, async (req, res) => {
 router.get('/users', authMiddleware, adminOnly, async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT user_id, name, email, role_id, created_at FROM users ORDER BY user_id DESC
+      SELECT id, name, email, role_id, created_at FROM users ORDER BY id DESC
     `);
     res.json({ users: result.rows.map(u => ({ ...u, role_name: mapRoleName(u.role_id) })) });
   } catch (error) {
@@ -67,7 +67,7 @@ router.put('/users/:id/role', authMiddleware, adminOnly, async (req, res) => {
       return res.status(400).json({ error: 'Invalid role specified' });
     }
     const result = await pool.query(
-      'UPDATE users SET role_id = $1 WHERE user_id = $2 RETURNING user_id, name, email, role_id',
+      'UPDATE users SET role_id = $1 WHERE id = $2 RETURNING id, name, email, role_id',
       [role_id, id]
     );
     if (result.rows.length === 0) {
@@ -90,7 +90,7 @@ router.put('/users/:id/toggle-status', authMiddleware, adminOnly, async (req, re
     const { id } = req.params;
     try {
       const result = await pool.query(
-        'UPDATE users SET is_active = NOT is_active WHERE user_id = $1 RETURNING user_id, name, email, is_active',
+        'UPDATE users SET is_active = NOT is_active WHERE id = $1 RETURNING id, name, email, is_active',
         [id]
       );
       if (result.rows.length === 0) {
@@ -119,7 +119,7 @@ router.delete('/users/:id', authMiddleware, adminOnly, async (req, res) => {
       return res.status(400).json({ error: 'Cannot delete your own account' });
     }
     const result = await pool.query(
-      'DELETE FROM users WHERE user_id = $1 RETURNING name, email',
+      'DELETE FROM users WHERE id = $1 RETURNING name, email',
       [id]
     );
     if (result.rows.length === 0) {
@@ -161,14 +161,14 @@ router.post('/users', authMiddleware, adminOnly, async (req, res) => {
     if (![1,2].includes(parseInt(role_id))) {
       return res.status(400).json({ error: 'Invalid role specified' });
     }
-    const password_hash = await bcrypt.hash(password, 10);
-    const existing = await pool.query('SELECT user_id FROM users WHERE email = $1', [email]);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.rows.length > 0) {
       return res.status(409).json({ error: 'Email already exists' });
     }
     const result = await pool.query(
-      'INSERT INTO users (name, email, password_hash, role_id) VALUES ($1,$2,$3,$4) RETURNING user_id, name, email, role_id, created_at',
-      [name, email, password_hash, role_id]
+      'INSERT INTO users (name, email, password, role_id) VALUES ($1,$2,$3,$4) RETURNING id, name, email, role_id, created_at',
+      [name, email, hashedPassword, role_id]
     );
     res.status(201).json({
       message: 'User created',
@@ -343,11 +343,11 @@ router.get('/events/:id/users', authMiddleware, adminOnly, async (req, res) => {
     await ensureUserEventTable();
     const { id } = req.params; // event id
     const result = await pool.query(
-      `SELECT u.user_id, u.name, u.email, u.role_id
+      `SELECT u.id, u.name, u.email, u.role_id
        FROM users u
-       JOIN user_event_assignments a ON a.user_id = u.user_id
+       JOIN user_event_assignments a ON a.user_id = u.id
        WHERE a.event_id = $1
-       ORDER BY u.user_id ASC`,
+       ORDER BY u.id ASC`,
       [id]
     );
     res.json({ users: result.rows });
@@ -493,7 +493,7 @@ async function ensureStockSchema() {
       CREATE TABLE IF NOT EXISTS stock_orders (
         id SERIAL PRIMARY KEY,
         event_id INTEGER REFERENCES popup_events(event_id) ON DELETE SET NULL,
-        user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
         status VARCHAR(20) NOT NULL DEFAULT 'requested',
         note TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -588,7 +588,7 @@ router.get('/stock-orders', authMiddleware, adminOnly, async (req, res) => {
       SELECT o.*, e.event_name, u.name AS manager_name
       FROM stock_orders o
       LEFT JOIN popup_events e ON e.event_id = o.event_id
-      LEFT JOIN users u ON u.user_id = o.user_id
+      LEFT JOIN users u ON u.id = o.user_id
       ${where}
       ORDER BY o.created_at DESC
     `;
@@ -666,8 +666,7 @@ router.post('/stock-orders/:id/fulfill', authMiddleware, adminOnly, async (req, 
         `SELECT w.quantity AS wq, p.stock_quantity AS pq
          FROM products p
          LEFT JOIN warehouse_stock w ON w.product_id = p.product_id
-         WHERE p.product_id = $1
-         FOR UPDATE`,
+         WHERE p.product_id = $1`,
         [it.product_id]
       );
       const row = r.rows[0] || {};
@@ -683,8 +682,7 @@ router.post('/stock-orders/:id/fulfill', authMiddleware, adminOnly, async (req, 
         `SELECT w.quantity AS wq, p.stock_quantity AS pq
          FROM products p
          LEFT JOIN warehouse_stock w ON w.product_id = p.product_id
-         WHERE p.product_id = $1
-         FOR UPDATE`,
+         WHERE p.product_id = $1`,
         [it.product_id]
       );
       const row = r.rows[0] || {};

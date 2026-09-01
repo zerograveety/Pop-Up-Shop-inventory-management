@@ -303,7 +303,7 @@ async function ensureStockSchema() {
       CREATE TABLE IF NOT EXISTS stock_orders (
         id SERIAL PRIMARY KEY,
         event_id INTEGER REFERENCES popup_events(event_id) ON DELETE SET NULL,
-        user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
         status VARCHAR(20) NOT NULL DEFAULT 'requested',
         note TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
